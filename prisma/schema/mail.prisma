@@ -1,0 +1,12 @@
+model Mail {
+  id        Int           @id @default(autoincrement())
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  title     String
+  subject   String
+  body      String
+  isRead    Boolean       @default(false)
+  from      String
+  to        String
+  tags      TagsOnMails[]
+}
