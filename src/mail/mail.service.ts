@@ -66,20 +66,46 @@ export class MailService {
     id: number,
     updateMailTagDto: UpdateMailTagDto,
   ): Promise<Mail> {
+    const selectedTags = await this.prisma.tag.findMany({
+      where: {
+        id: {
+          in: updateMailTagDto.tags,
+        },
+      },
+    });
+    if (!selectedTags) {
+      throw new NotFoundException('No tag was found');
+    }
     const updatedMail = await this.prisma.mail.update({
       where: { id },
       data: {
         tags: {
-          connect: updateMailTagDto.tags.map((tagId: number) => ({
-            mailId_tagId: {
-              mailId: id,
-              tagId,
-            },
-          })),
+          connectOrCreate: selectedTags.map(
+            ({ id: tagId, name }: { id: number; name: string }) => ({
+              create: {
+                tag: {
+                  connect: {
+                    id: tagId,
+                    name,
+                  },
+                },
+              },
+              where: {
+                mailId_tagId: {
+                  tagId,
+                  mailId: id,
+                },
+              },
+            }),
+          ),
         },
       },
       include: {
-        tags: true,
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
       },
     });
     if (!updatedMail) {
