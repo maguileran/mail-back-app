@@ -33,8 +33,8 @@ export class TagService {
     return result;
   }
 
-  update(id: number, { name }: UpdateTagDto) {
-    const updatedTag = this.prisma.tag.update({
+  async update(id: number, { name }: UpdateTagDto) {
+    const updatedTag = await this.prisma.tag.update({
       where: {
         id,
       },
