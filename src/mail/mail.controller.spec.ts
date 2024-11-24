@@ -23,11 +23,11 @@ describe('MailController', () => {
     controller = module.get<MailController>(MailController);
   });
 
-  it('should be defined', () => {
+  it('Should be defined', () => {
     expect(controller).toBeDefined();
   });
 
-  it('should return an array of mails', async () => {
+  it('Should return an array of mails', async () => {
     const findAllMockResult: Mail[] = [
       {
         body: '',
