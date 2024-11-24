@@ -50,6 +50,28 @@ export class TagService {
 
   async remove(id: number) {
     try {
+      const mailsIds = await this.prisma.tagsOnMails.findMany({
+        where: {
+          tagId: {
+            equals: id,
+          },
+        },
+        select: {
+          mailId: true,
+        },
+      });
+
+      await this.prisma.tagsOnMails.deleteMany({
+        where: {
+          mailId: {
+            in: mailsIds.map(({ mailId }: { mailId: number }) => mailId),
+          },
+          tagId: {
+            equals: id,
+          },
+        },
+      });
+
       const removedTag = await this.prisma.tag.delete({
         where: {
           id,
@@ -57,7 +79,10 @@ export class TagService {
       });
       return removedTag;
     } catch (e) {
-      throw new NotFoundException('No tag was found', e);
+      throw new NotFoundException({
+        cause: e.meta.cause,
+        message: 'Not tag was found',
+      });
     }
   }
 }
