@@ -1,31 +1,100 @@
 import { Mail } from '@prisma/client';
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateMailDto } from './dto/create-mail.dto';
-import { UpdateMailDto } from './dto/update-mail.dto';
+import {
+  UpdateMailReadStatusDto,
+  UpdateMailTagDto,
+} from './dto/update-mail.dto';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class MailService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(createMailDto: CreateMailDto) {
-    return 'This action adds a new mail';
+  async create(createMailDto: CreateMailDto): Promise<Mail> {
+    const createdMail = await this.prisma.mail.create({
+      data: { ...createMailDto },
+    });
+    if (!createdMail) {
+      throw new NotFoundException('No mail was created');
+    }
+    return createdMail;
   }
 
   async findAll(): Promise<Mail[]> {
-    const data = await this.prisma.mail.findMany();
-    return data;
+    return await this.prisma.mail.findMany({
+      include: {
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} mail`;
+  async findOne(id: number): Promise<Mail> {
+    return await this.prisma.mail.findUnique({
+      where: {
+        id,
+      },
+    });
   }
 
-  update(id: number, updateMailDto: UpdateMailDto) {
-    return `This action updates a #${id} mail`;
+  async updateReadStatus(
+    id: number,
+    updateMailReadStatusDto: UpdateMailReadStatusDto,
+  ): Promise<Mail> {
+    const updatedMail = await this.prisma.mail.update({
+      data: {
+        isRead: updateMailReadStatusDto.isRead,
+      },
+      where: {
+        id,
+      },
+    });
+    if (!updatedMail) {
+      throw new NotFoundException('No email was updated');
+    }
+    return updatedMail;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} mail`;
+  async updateMailTag(
+    id: number,
+    updateMailTagDto: UpdateMailTagDto,
+  ): Promise<Mail> {
+    const updatedMail = await this.prisma.mail.update({
+      where: { id },
+      data: {
+        tags: {
+          connect: updateMailTagDto.tags.map((tagId: number) => ({
+            mailId_tagId: {
+              mailId: id,
+              tagId,
+            },
+          })),
+        },
+      },
+      include: {
+        tags: true,
+      },
+    });
+    if (!updatedMail) {
+      throw new NotFoundException('No email was updated');
+    }
+    return updatedMail;
+  }
+
+  async remove(id: number): Promise<Mail> {
+    const removedMail = await this.prisma.mail.delete({
+      where: { id },
+    });
+    if (!removedMail) {
+      throw new NotFoundException('No mail was deleted');
+    }
+    return removedMail;
   }
 }
