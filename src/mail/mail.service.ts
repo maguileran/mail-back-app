@@ -73,8 +73,18 @@ export class MailService {
         },
       },
     });
-    if (!selectedTags) {
-      throw new NotFoundException('No tag was found');
+
+    if (!selectedTags.length) {
+      return await this.prisma.mail.update({
+        where: { id },
+        data: {
+          tags: {
+            deleteMany: {
+              mailId: id,
+            },
+          },
+        },
+      });
     }
     const updatedMail = await this.prisma.mail.update({
       where: { id },
@@ -146,7 +156,7 @@ export class MailService {
     } catch (e) {
       throw new NotFoundException({
         cause: e.meta.cause,
-        message: 'Not tag was found',
+        message: 'Not mail was found',
       });
     }
   }
