@@ -115,12 +115,39 @@ export class MailService {
   }
 
   async remove(id: number): Promise<Mail> {
-    const removedMail = await this.prisma.mail.delete({
-      where: { id },
-    });
-    if (!removedMail) {
-      throw new NotFoundException('No mail was deleted');
+    try {
+      const tagsIds = await this.prisma.tagsOnMails.findMany({
+        where: {
+          mailId: {
+            equals: id,
+          },
+        },
+        select: {
+          tagId: true,
+        },
+      });
+
+      await this.prisma.tagsOnMails.deleteMany({
+        where: {
+          mailId: {
+            equals: id,
+          },
+          tagId: {
+            in: tagsIds.map(({ tagId }: { tagId: number }) => tagId),
+          },
+        },
+      });
+
+      const removedMail = await this.prisma.mail.delete({
+        where: { id },
+      });
+
+      return removedMail;
+    } catch (e) {
+      throw new NotFoundException({
+        cause: e.meta.cause,
+        message: 'Not tag was found',
+      });
     }
-    return removedMail;
   }
 }
